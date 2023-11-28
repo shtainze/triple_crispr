@@ -1,0 +1,10 @@
+biopython==1.81
+dask==2023.9.3
+jupyter==1.0.0
+matplotlib==3.8.0
+numpy==1.26.0
+pandas==2.1.0
+primer3-py==2.0.0
+scipy==1.11.2
+tqdm==4.66.1
+ViennaRNA==2.6.4
