@@ -170,6 +170,21 @@ def f_cut_export(data, mode, dir_save, prefix, n_cut_size=1000000):
                 pickle.dump(chunk, f)
     print("Done.")
 
+def get_n_core():
+    '''
+    Get the number of available CPU cores
+    '''
+    n_core_all = os.cpu_count()
+    cpu_percent = psutil.cpu_percent(interval=1)
+    # `50 - cpu_percent` instead of `100 - cpu_percent`:
+    # this is for sparing some CPU power for other users
+    n_core_available = int(n_core_all * (50 - cpu_percent) / 100)
+    
+    print("All cores:", n_core_all)
+    print("Idle cores:", n_core_available)
+
+    return n_core_available
+
 ############################
 # Initial
 ############################
@@ -1066,15 +1081,7 @@ def f_offtarget_prepare_args(dir_database):
     # Combinations of files from two directories
     list_args = [(dir_database, file_genome, file_target, 200) for file_genome in files_genome for file_target in files_target]
     
-    # Get the number of available CPU cores
-    n_core_all = os.cpu_count()
-    cpu_percent = psutil.cpu_percent(interval=1)
-    # `80 - cpu_percent` instead of `100 - cpu_percent`:
-    # this is for sparing some CPU power for other users
-    n_core_available = int(n_core_all * (50 - cpu_percent) / 100)
-    
-    print("All cores:", n_core_all)
-    print("Idle cores:", n_core_available)
+    n_core_available = get_n_core()
 
     return list_args, n_core_available
 
@@ -1136,14 +1143,7 @@ def f_qPCR_prepare_args(dir_database):
     # Combinations of files from two directories
     list_args = [(dir_database, file_target) for file_target in files_target]
     
-    n_core_all = os.cpu_count()
-    cpu_percent = psutil.cpu_percent(interval=1)
-    # `80 - cpu_percent` instead of `100 - cpu_percent`:
-    # this is for sparing some CPU power for other users
-    n_core_available = int(n_core_all * (50 - cpu_percent) / 100)
-    
-    print("All cores:", n_core_all)
-    print("Idle cores:", n_core_available)
+    n_core_available = get_n_core()
 
     return list_args, n_core_available
 
