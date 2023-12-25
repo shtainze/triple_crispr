@@ -1207,6 +1207,18 @@ def check_non_overlapping(group):
             group.at[i, 'non_overlapping'] = 1
     return group
 
+def get_chunk_summary(chunk, chunk_summary, filename_suffix):
+    '''
+    Get the list of genes for each split file
+    '''
+    chunk_summary_single = chunk[["gene", "chr"]].drop_duplicates().reset_index(drop=True)
+    chunk_summary_single["file"] = filename_suffix
+    if len(chunk_summary) == 0:
+        chunk_summary = chunk_summary_single.copy()
+    else:
+        chunk_summary = pd.concat([chunk_summary, chunk_summary_single], axis=0)
+    return chunk_summary
+
 def f_cut_save_final(dir_database, data, filename_base):
     '''
     Export the finalized version of database
@@ -1232,6 +1244,7 @@ def f_cut_save_final(dir_database, data, filename_base):
             filename = os.path.join(dirname,
                                     filename_base + "_" + filename_suffix + ".csv")
             chunk.to_csv(filename, index=False)
+            chunk_summary = get_chunk_summary(chunk, chunk_summary, filename_suffix)
             break
 
         # Expand the chunk to cover all the entries with the same gene
@@ -1243,8 +1256,19 @@ def f_cut_save_final(dir_database, data, filename_base):
         filename = os.path.join(dirname,
                                 filename_base + "_" + filename_suffix + ".csv")
         chunk.to_csv(filename, index=False)
+        chunk_summary = get_chunk_summary(chunk, chunk_summary, filename_suffix)
         chunk_start = chunk_end
     print(datetime.now(), "Completed export to", n_file, "file(s)")
+
+    # Export summary
+    dirname = os.path.join(dir_database,
+                            "result", 
+                            "final")    
+    filename = os.path.join(dirname,
+                            filename_base + "_summary.csv")
+
+    chunk_summary.to_csv(filename, index=False)
+    print(datetime.now(), "Exported summary to", filename)
     print()
 
 def f_save_final(dir_database, data, filename_base):
