@@ -1211,7 +1211,7 @@ def get_chunk_summary(chunk, chunk_summary, filename_suffix):
     '''
     Get the list of genes for each split file
     '''
-    chunk_summary_single = chunk[["gene", "chr"]].drop_duplicates().reset_index(drop=True)
+    chunk_summary_single = chunk[["gene"]].drop_duplicates().reset_index(drop=True)
     chunk_summary_single["file"] = filename_suffix
     if len(chunk_summary) == 0:
         chunk_summary = chunk_summary_single.copy()
