@@ -1232,6 +1232,7 @@ def f_cut_save_final(dir_database, data, filename_base):
     
     chunk_size = 10000
     chunk_start = 0
+    chunk_summary = []
     n_file = 0
     while chunk_start < len(data):
         chunk_end = chunk_start + chunk_size
