@@ -840,7 +840,7 @@ def f_sieve_target_1(dir_database):
     pd_merged['variant_common'] = pd_merged['variant_common'].replace({'both': 1, 'left_only': 0})
     
     print(datetime.now(), "Convert to actual gRNA sequence by changing the initial to G")
-    pd_merged['target_initialG'] = 'G' + pd_merged['target'].str[1:]
+    pd_merged['target_initialG'] = 'G' + pd_merged['target'].str[1:20]
     print(datetime.now(), "Omit duplicates")
     pd_merged = pd_merged.drop_duplicates(subset='target_initialG', keep=False).reset_index(drop=True)
     
@@ -867,7 +867,7 @@ def f_add_RNA_structure(dir_database, n_core):
         pd_merged = pickle.load(f)
 
     print("Add stem-loop sequences")
-    pd_merged["sgRNA"] = pd_merged["target_initialG"].str[:20] + \
+    pd_merged["sgRNA"] = pd_merged["target_initialG"] + \
         'GUUUUAGAGCUAGAAAUAGCAAGUUAAAAUAAGGCUAGUCCGUUAUCAACUUGAAAAAGUGGCACCGAGUCGGUGCUUUU'
  
     # Estimate completion time, as this part takes much time
@@ -903,7 +903,7 @@ def f_sieve_target_2(dir_database):
 
     # Flag if GC >= 60%
     print(datetime.now(), "Flag if GC > 60%")
-    pd_merged["GC"] = pd_merged["target_initialG"].apply(lambda x: gc_fraction(x[:20]) * 100)
+    pd_merged["GC"] = pd_merged["target_initialG"].apply(lambda x: gc_fraction(x) * 100)
     pd_merged["omit_GC60"] = pd_merged["GC"].apply(lambda x: 1 if x >= 60 else 0)
     
     # Flag if containing TTTT
@@ -914,10 +914,10 @@ def f_sieve_target_2(dir_database):
     print(datetime.now(), "Flag if dimerizing with vector sequence")
     # Estimate completion time, as this part takes much time
     def f_test(i):
-        return pd_merged["target_initialG"].iloc[0:(10**i)].apply(lambda x: needle('AAAAGCACCGACTCGGTGCC', x[:20]))
+        return pd_merged["target_initialG"].iloc[0:(10**i)].apply(lambda x: needle('AAAAGCACCGACTCGGTGCC', x))
     f_estimate_time(f_test, pd_merged.shape[0])
     # Proceed to calculation
-    pd_merged["NW_score"] = pd_merged["target_initialG"].apply(lambda x: needle('AAAAGCACCGACTCGGTGCC', x[:20]))
+    pd_merged["NW_score"] = pd_merged["target_initialG"].apply(lambda x: needle('AAAAGCACCGACTCGGTGCC', x))
     print('Flag if score > 60')
     pd_merged["omit_dimerize_with_vector"] = pd_merged["NW_score"].apply(lambda x: 1 if x > 60 else 0)
 
@@ -1366,9 +1366,9 @@ def f_final_processing(dir_database):
     # AAV construction primer
     print(datetime.now(), "Add primer sequences for AAV construction...")
     pd_combined["AAV_primer_f"] = pd_combined["target_initialG"].apply(
-        lambda x: x[:20] + "GTTTTAGAGCTAGAAATAGCAAGTTAAA")
+        lambda x: x + "GTTTTAGAGCTAGAAATAGCAAGTTAAA")
     pd_combined["AAV_primer_r"] = pd_combined["target_initialG"].apply(
-        lambda x: str(Seq(x[:20]).reverse_complement() + "GGTGTTTCGTCCTTTCCACAAGATA"))
+        lambda x: str(Seq(x).reverse_complement() + "GGTGTTTCGTCCTTTCCACAAGATA"))
 
     # Finally, show basic statistics
     f_show_stat(pd_combined)
