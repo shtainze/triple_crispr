@@ -21,6 +21,10 @@ It is assumed that your directory is structured as follows:
 
 Upon execution, the script automatically generates a directory under `database`. All the subsequent outputs will be done solely inside here.
 
+The interactive pipeline is in `script/pipeline_interactive.ipynb`.
+
+# Environment
+
 Necessary packages are listed in `scripts/python_requirement.txt`.
 
-The interactive pipeline is in `script/pipeline_interactive.ipynb`.
+Alternatively, you can use a docker image which can be build with `scripts/dockerfile`.
