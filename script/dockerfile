@@ -1,0 +1,66 @@
+###########
+# Usage (clear anything built for other projects)
+# docker build -t shtainze/crispr:20231225 ./ --no-cache
+#
+# Run the docker image
+# docker run -it -p 8888:8888 -v "$(pwd)":/workdir shtainze/crispr:20231225
+# After the docker image starts, hit Enter, and bash is ready
+###########
+
+FROM ubuntu:22.04
+
+# Update apt packages
+RUN apt update
+RUN apt upgrade -y
+
+# Install software
+# "libnss3 libnss3-tools": for domain name resolution
+# "inetutils-ping iputils-ping": for domain name resolution
+RUN apt install -y wget curl htop unzip vim libnss3 libnss3-tools
+
+###########
+# Install Python
+###########
+
+RUN apt install -y software-properties-common
+RUN add-apt-repository ppa:deadsnakes/ppa
+# export timezone - for python install
+ENV TZ=Asia/Tokyo
+# place timezone data /etc/timezone
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+# Install (main)
+RUN apt install -y --no-install-recommends python3.11 python3.11-dev
+RUN apt install -y python3-pip iputils-ping dnsutils
+
+RUN apt update
+RUN apt upgrade -y
+
+###########
+# Install Python packages
+###########
+
+RUN python3 -m pip install \
+	jupyter matplotlib numpy scipy tqdm \
+	openpyxl pandas polars dask \
+	biopython primer3-py ViennaRNA
+
+###########
+# Make Jupyter available from outside the docker container
+###########
+
+# Set up Jupyter Notebook config
+RUN jupyter notebook --generate-config --allow-root
+RUN echo "c.NotebookApp.ip = '0.0.0.0'" >> ~/.jupyter/jupyter_notebook_config.py
+RUN echo "c.NotebookApp.token = ''" >> ~/.jupyter/jupyter_notebook_config.py
+
+# Expose Jupyter Notebook port
+EXPOSE 8888
+
+# Set up entrypoint script to start both Jupyter Notebook and bash
+RUN echo "#!/bin/bash" >> /entrypoint.sh
+RUN echo "jupyter notebook --no-browser --port=8888 --ip=0.0.0.0 --allow-root --NotebookApp.token='' &" >> /entrypoint.sh
+RUN echo "/bin/bash" >> /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+# Set the entrypoint to run the script
+ENTRYPOINT ["/entrypoint.sh"]
