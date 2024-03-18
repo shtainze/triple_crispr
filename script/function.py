@@ -1179,6 +1179,88 @@ def f_qPCR_result_aggregate(dir_database):
     print(datetime.now(), "Saved to", filename)
     print(datetime.now(), "Done.")
 
+def calc_qPCR_for_external(dir_database, dir_root, file_in, file_out_suffix):
+    '''
+    Calculate qPCR primers for:
+    - a user-defined list of gRNA target candidates
+    The list should be given as a .csv file containing columns:
+        - `chr`: chromosome number
+        - `target`: 20- or 23-nt target sequence
+    '''   
+    print(datetime.now(), "Load from", file_in)
+    df_candidate = pd.read_csv(file_in)
+    i_end = len(df_candidate)
+    print(datetime.now(), "Found", i_end, "entries")
+    
+    chr_previous = -100000 # Initialize as non-existent number
+    n_len = -100000
+    l_result = []
+    
+    for i_entry in range(i_end):
+        single_entry = df_candidate[i_entry:i_entry+1]
+        chr_now = single_entry["chr"].values[0]
+        seq_now = single_entry["target"].values[0]
+        print(datetime.now(), "Processing entry", i_entry+1, ": chr", chr_now, seq_now)
+        # Load chromosomal sequence data if not yet loaded
+        if chr_previous != chr_now:
+            filename = os.path.join(
+                dir_database, "result", "chromosome", 
+                "chr_"+str(chr_now)+".fasta"
+            )
+            with open(filename, "rb") as f:
+                seq_f = list(SeqIO.parse(filename, "fasta"))[0].seq
+            seq_r = seq_f.reverse_complement()
+            seq_f = str(seq_f)
+            seq_r = str(seq_r)
+            n_len = len(seq_f)
+            chr_previous = chr_now
+        # Search in the forward strand
+        start = 0
+        m = re.search(seq_now, seq_f)
+        if m is None:
+            pass
+        else:
+            strand = "+"
+            start = m.start() + 1
+        # Search in the reverse strand
+        m = re.search(seq_now, seq_r)
+        if m is None:
+            pass
+        else:
+            strand = "-"
+            start = m.start() + 1
+            start = n_len - start + 1
+
+        # create series from dictionary
+        single_entry = {'start': start,
+                'chr': chr_now,
+                'strand': strand}
+
+        single_entry = pd.DataFrame(single_entry, index=[0])
+        
+        l_result_single, n_len = cmulti.f_qPCR_single(
+            single_entry, dir_database, seq_f, seq_r, n_len
+        )
+
+        l_result_single = [chr_now, strand, start, seq_now] + l_result_single
+        l_result.append(l_result_single)
+
+    df_result = pd.DataFrame(l_result, columns=[
+        "chr", "strand", "start", "target",
+        "1st_left_seq", "1st_left_Tm",
+        "1st_right_1_seq", "1st_right_1_Tm", "1st_right_1_product_size",
+        "1st_right_2_seq", "1st_right_2_Tm", "1st_right_2_product_size",
+        "1st_right_3_seq", "1st_right_3_Tm", "1st_right_3_product_size",
+        "2nd_left_seq", "2nd_left_Tm",
+        "2nd_right_1_seq", "2nd_right_1_Tm", "2nd_right_1_product_size",
+        "2nd_right_2_seq", "2nd_right_2_Tm", "2nd_right_2_product_size",
+        "2nd_right_3_seq", "2nd_right_3_Tm", "2nd_right_3_product_size",    
+    ])
+    file_out = os.path.join(dir_root, file_out_suffix)
+    print(datetime.now(), "Writing to", file_out)
+    df_result.to_csv(file_out, index=False)
+    print(datetime.now(), "Done.")
+
 ############################
 # Final processing
 ############################
